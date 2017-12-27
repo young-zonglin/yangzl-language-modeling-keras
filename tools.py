@@ -14,6 +14,12 @@ def get_matrix_memory_size(matrix):
 
 
 def get_array_memory_size(array_shape, item_size):
+    """
+    calculate memory size of array using shape and item size
+    :param array_shape: shape attribute of numpy array
+    :param item_size: element size of array in byte
+    :return: array memory size in GB
+    """
     element_number = 1
     for tmp in array_shape:
         element_number *= tmp
