@@ -8,6 +8,7 @@ from keras.layers import LSTM
 from keras.layers import Embedding
 from keras.layers import Dropout
 import tools
+import parameters
 import sys
 
 # TODO 使用整个语料库做为训练数据而不只是某个文本
@@ -33,10 +34,10 @@ for text in raw_corpus_data:
             input_output_pairs.append(input_output_pair)
 print('Total number of input-output pair: {}'.format(len(input_output_pairs)))
 y_shape = len(input_output_pairs), vocab_size+1
-y_memory_size = tools.get_array_memory_size(y_shape, 4)
+y_memory_size = tools.get_array_memory_size(y_shape, 1/8)
 print('one-hot编码后的输出占用内存大小为：', y_memory_size, 'GB')
-if y_memory_size > 2:
-    print('内存占用超过2GB')
+if y_memory_size > parameters.Y_MEMORY_SIZE_THRESHOLD_GB:
+    print('内存占用超过', parameters.Y_MEMORY_SIZE_THRESHOLD_GB, '2GB')
     sys.exit(0)
 # pad input sequences
 max_length = max([len(input_output_pair) for input_output_pair in input_output_pairs])
