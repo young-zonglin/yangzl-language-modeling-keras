@@ -1,4 +1,5 @@
 import sys
+import os
 
 
 def get_matrix_memory_size(matrix):
@@ -28,3 +29,18 @@ def get_array_memory_size(array_shape, item_size):
 
 def bytes_to_gb(bytes_number):
     return bytes_number / (1024**3)
+
+
+def get_filenames_under_path(path):
+    """
+    get filename seq under path.
+    :param path: string
+    :return: filename seq
+    """
+    filenames = list()
+    for filename in os.listdir(path):
+        filename = os.path.join(path, filename)
+        if os.path.isdir(filename):
+            continue
+        filenames.append(filename)
+    return filenames
