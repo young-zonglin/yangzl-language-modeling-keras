@@ -1,2 +1,3 @@
 # keras-language-model
-my first language model implemented by keras with LSTM in Python.
+my first language model implemented by 
+Keras with LSTM in Python.
