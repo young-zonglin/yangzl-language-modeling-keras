@@ -25,6 +25,7 @@ class LanguageModel:
         self.vocab_size = 0
         self.max_length = 0
         self.model = None
+        self.tokenizer = None
         self.X = None
         self.y = None
 
@@ -36,16 +37,16 @@ class LanguageModel:
             with open(filename, 'r', encoding='gbk') as train_file:
                 raw_corpus_data.append(train_file.read())
 
-        tokenizer = Tokenizer()
-        tokenizer.fit_on_texts(raw_corpus_data)
-        self.vocab_size = len(tokenizer.word_index)
+        self.tokenizer = Tokenizer()
+        self.tokenizer.fit_on_texts(raw_corpus_data)
+        self.vocab_size = len(self.tokenizer.word_index)
         print('Vocabulary size: %d' % self.vocab_size)
 
         # 使用LSTM编码任意长度的序列
         input_output_pairs = list()
         for text in raw_corpus_data:
             for line in text.split('\n'):
-                encoded = tokenizer.texts_to_sequences([line])[0]
+                encoded = self.tokenizer.texts_to_sequences([line])[0]
                 for i in range(1, len(encoded)):
                     input_output_pair = encoded[: i+1]
                     input_output_pairs.append(input_output_pair)
@@ -114,3 +115,51 @@ class LanguageModel:
         print("\n==================================\n性能评估：")
         print("%s: %.4f" % (self.model.metrics_names[0], scores[0]))
         print("%s: %.2f%%" % (self.model.metrics_names[1], scores[1] * 100))
+
+    def predict(self):
+        input_seq_index = np.random.randint(len(self.X))
+        input_seq = self.X[input_seq_index]
+        prediction = self.model.predict(input_seq, verbose=2)
+        print('Model out vector:\n', prediction)
+        y_index = np.argmax(prediction)
+        print('Predict word index:', y_index)
+        out_word = ''
+        for word, index in self.tokenizer.word_index.items():
+            if index == y_index:
+                out_word = word
+                break
+        print('Input output pair:', input_seq, '->', out_word)
+
+    # generate a sequence from a language model
+    def generate_seq(self, seed_text, n_words):
+        in_text = seed_text
+        # generate a fixed number of words
+        for _ in range(n_words):
+            # encode the text as integer
+            encoded = self.tokenizer.texts_to_sequences([in_text])[0]
+            # pre-pad sequences to a fixed length
+            encoded = pad_sequences([encoded], maxlen=self.max_length-1, padding='pre')
+            # predict probabilities for each word
+            y_index = self.model.predict_classes(encoded, verbose=0)
+            # map predicted word index to word
+            out_word = ''
+            for word, index in self.tokenizer.word_index.items():
+                if index == y_index:
+                    out_word = word
+                    break
+            # append to input
+            in_text += ' ' + out_word
+        return in_text.replace(' ', '')
+
+    def save_model(self):
+        pass
+
+    def fit_model_generator(self):
+
+        pass
+
+    def evaluate_model_generator(self):
+        pass
+
+    def predict_with_generator(self):
+        pass
