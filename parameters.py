@@ -1,6 +1,7 @@
 import os
 
 
+FULL_DATA_MODE = False
 Y_MEMORY_SIZE_THRESHOLD_GB = 2
 
 # 学习os模块 => done
@@ -10,7 +11,7 @@ TRAIN_DATA_PATH = os.path.join(PROJECT_ROOT, 'data')
 OPEN_FILE_ENCODING = 'gbk'
 SAVE_FILE_ENCODING = 'utf-8'
 
-BATCH_SAMPLES_NUMBER = 10
+BATCH_SAMPLES_NUMBER = 128
 
 
 if __name__ == '__main__':

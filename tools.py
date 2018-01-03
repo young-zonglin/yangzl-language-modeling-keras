@@ -3,6 +3,7 @@ import os
 import parameters
 from keras.utils import to_categorical
 from keras.preprocessing.sequence import pad_sequences
+from keras.preprocessing.text import Tokenizer
 
 
 def get_matrix_memory_size(matrix):
@@ -75,3 +76,50 @@ def process_format_to_model_input(input_output_pairs, vocab_size, max_length):
     # one-hot encode output, word index => one-hot vector
     y = to_categorical(y, num_classes=vocab_size + 1)
     return X, y
+
+
+def generate_text_from_corpus(path):
+    """
+    生成器函数，返回一个迭代器
+    :param path:
+    :return: 迭代器，可以遍历path下所有文件的内容
+    """
+    filenames = get_filenames_under_path(path)
+    for filename in filenames:
+        with open(filename, 'r', encoding=parameters.OPEN_FILE_ENCODING) as file:
+            yield file.read()
+
+
+def fit_tokenizer(path):
+    tokenizer = Tokenizer()
+    tokenizer.fit_on_texts(generate_text_from_corpus(path))
+    return tokenizer
+
+
+def generate_input_output_pair_from_corpus(path, tokenizer):
+    for text in generate_text_from_corpus(path):
+        for line in text.split('\n'):
+            encoded = tokenizer.texts_to_sequences([line])[0]
+            for i in range(1, len(encoded)):
+                input_output_pair = encoded[: i + 1]
+                yield input_output_pair
+
+
+def generate_batch_samples_from_corpus(path, tokenizer, vocab_size, max_length):
+    while True:
+        batch_samples_count = 0
+        input_output_pairs = list()
+        for input_output_pair in generate_input_output_pair_from_corpus(path, tokenizer):
+            if batch_samples_count < parameters.BATCH_SAMPLES_NUMBER:
+                input_output_pairs.append(input_output_pair)
+                batch_samples_count += 1
+            else:
+                X, y = process_format_to_model_input(input_output_pairs, vocab_size, max_length)
+                yield X, y
+                input_output_pairs = list()
+                batch_samples_count = 0
+
+
+# if __name__ == '__main__':
+#     for file_content in generate_text_from_corpus('E:\自然语言处理数据集\搜狐新闻数据(SogouCS)_segment'):
+#         print('111')

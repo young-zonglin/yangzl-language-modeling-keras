@@ -1,5 +1,4 @@
 import numpy as np
-from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from keras.models import Sequential
 from keras.layers import Dense
@@ -8,12 +7,12 @@ from keras.layers import LSTM
 from keras.layers import Embedding
 from keras.layers import Dropout
 import tools
-import parameters
 import network_conf
 
 
 # 使用整个语料库做为训练数据而不只是某个文本 => done
 # 使用序列标注的方法减少词汇表的大小 => done
+# TODO 得到可复现的结果
 # fix seed of generator of numpy random number for reproducibility
 np.random.seed(7)
 
@@ -22,6 +21,7 @@ class LanguageModel:
     def __init__(self):
         self.vocab_size = network_conf.VOCAB_SIZE
         self.max_length = network_conf.MAX_LENGTH
+        self.train_data_path = None
         self.model = None
         self.tokenizer = None
         self.X = None
@@ -29,26 +29,14 @@ class LanguageModel:
 
     # 装载全量数据
     def load_data(self, train_data_path):
-        # ['content of file1', ..., 'content of file2']
-        raw_corpus_data = []
-        filenames = tools.get_filenames_under_path(train_data_path)
-        for filename in filenames:
-            with open(filename, 'r', encoding=parameters.OPEN_FILE_ENCODING) as train_file:
-                raw_corpus_data.append(train_file.read())
-
-        self.tokenizer = Tokenizer()
-        self.tokenizer.fit_on_texts(raw_corpus_data)
+        self.tokenizer = tools.fit_tokenizer(train_data_path)
         self.vocab_size = len(self.tokenizer.word_index)
         print('Vocabulary size: %d' % self.vocab_size)
 
-        # 使用LSTM编码任意长度的序列
         input_output_pairs = list()
-        for text in raw_corpus_data:
-            for line in text.split('\n'):
-                encoded = self.tokenizer.texts_to_sequences([line])[0]
-                for i in range(1, len(encoded)):
-                    input_output_pair = encoded[: i+1]
-                    input_output_pairs.append(input_output_pair)
+        for input_output_pair in tools.generate_input_output_pair_from_corpus(train_data_path,
+                                                                              self.tokenizer):
+            input_output_pairs.append(input_output_pair)
         print('Total number of input-output pair: {}'.format(len(input_output_pairs)))
 
         self.max_length = max([len(input_output_pair) for input_output_pair in input_output_pairs])
@@ -147,17 +135,24 @@ class LanguageModel:
     def load_model(self):
         pass
 
-    def generate_batch_samples_from_corpus(self, path):
-        filenames = tools.get_filenames_under_path(path)
-        read_line_count = 0
-        while True:
-            for filename in filenames:
-                with open(filename, 'r', encoding=parameters.OPEN_FILE_ENCODING) as file:
-                    if read_line_count < parameters.BATCH_SAMPLES_NUMBER:
-                        pass
+    def prepare_for_generator(self, train_data_path):
+        self.train_data_path = train_data_path
+        self.tokenizer = tools.fit_tokenizer(self.train_data_path)
+        self.vocab_size = len(self.tokenizer.word_index)
+        print('Vocabulary size: %d' % self.vocab_size)
+        self.max_length = max([len(input_output_pair) for input_output_pair in
+                               tools.generate_input_output_pair_from_corpus(
+                                   self.train_data_path,
+                                   self.tokenizer)])
+        print('Max input-output pair length: {}'.format(self.max_length))
 
+    # 处理超过内存的数据集
     def fit_model_with_generator(self):
-        pass
+        self.model.fit_generator(tools.generate_batch_samples_from_corpus(self.train_data_path,
+                                                                          self.tokenizer,
+                                                                          self.vocab_size,
+                                                                          self.max_length),
+                                 steps_per_epoch=30000, epochs=1000, verbose=2)
 
     def evaluate_model_with_generator(self):
         pass
