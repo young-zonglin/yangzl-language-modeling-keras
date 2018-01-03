@@ -60,7 +60,7 @@ def process_format_to_model_input(input_output_pairs, vocab_size, max_length):
     """
     y_shape = len(input_output_pairs), vocab_size + 1
     y_memory_size = get_array_memory_size(y_shape, item_size=8)
-    print('One-hot编码后的输出占用内存大小为：', y_memory_size, 'GB')
+    # print('One-hot编码后的输出占用内存大小为：', y_memory_size, 'GB')
     if y_memory_size > parameters.Y_MEMORY_SIZE_THRESHOLD_GB:
         print('内存占用超过', parameters.Y_MEMORY_SIZE_THRESHOLD_GB, 'GB')
         sys.exit(0)
@@ -68,7 +68,7 @@ def process_format_to_model_input(input_output_pairs, vocab_size, max_length):
     # pad input sequences
     # lists of list => 2d numpy array
     input_output_pairs = pad_sequences(input_output_pairs, maxlen=max_length, padding='pre')
-    print('Input-output pairs:\n', input_output_pairs)
+    # print('Input-output pairs:\n', input_output_pairs)
 
     # split into input and output
     X, y = input_output_pairs[:, :-1], input_output_pairs[:, -1]

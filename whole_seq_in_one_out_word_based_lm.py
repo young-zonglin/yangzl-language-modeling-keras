@@ -64,6 +64,7 @@ class LanguageModel:
         # softmax output layer
         model.add(Dense(self.vocab_size + 1))
         model.add(Activation('softmax'))
+        print('############### Model summary ##################')
         print(model.summary())
         self.model = model
 
@@ -152,7 +153,7 @@ class LanguageModel:
                                                                           self.tokenizer,
                                                                           self.vocab_size,
                                                                           self.max_length),
-                                 steps_per_epoch=30000, epochs=1000, verbose=2)
+                                 steps_per_epoch=30000, epochs=1000, verbose=1)
 
     def evaluate_model_with_generator(self):
         pass
