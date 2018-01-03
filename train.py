@@ -5,7 +5,7 @@ import parameters
 def main():
     lm = LanguageModel()
     lm.load_data(train_data_path=parameters.TRAIN_DATA_PATH)
-    lm.load_model()
+    lm.define_model()
     lm.compile_model()
     lm.fit_model()
     lm.evaluate_model()

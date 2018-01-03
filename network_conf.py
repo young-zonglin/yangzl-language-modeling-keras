@@ -1,7 +1,9 @@
-embedding_output_dim = 64
+VOCAB_SIZE = 30000
+MAX_LENGTH = 200
 
-lstm_layer_unit = 50
+EMBEDDING_OUTPUT_DIM = 64
 
-dropout_layer_rate = 0.5
-dropout_layer_seed = 7
+LSTM_LAYER_UNIT = 50
 
+DROPOUT_LAYER_RATE = 0.5
+DROPOUT_LAYER_SEED = 7

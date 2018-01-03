@@ -1,7 +1,5 @@
-import sys
 import numpy as np
 from keras.preprocessing.text import Tokenizer
-from keras.utils import to_categorical
 from keras.preprocessing.sequence import pad_sequences
 from keras.models import Sequential
 from keras.layers import Dense
@@ -22,19 +20,20 @@ np.random.seed(7)
 
 class LanguageModel:
     def __init__(self):
-        self.vocab_size = 0
-        self.max_length = 0
+        self.vocab_size = network_conf.VOCAB_SIZE
+        self.max_length = network_conf.MAX_LENGTH
         self.model = None
         self.tokenizer = None
         self.X = None
         self.y = None
 
+    # 装载全量数据
     def load_data(self, train_data_path):
         # ['content of file1', ..., 'content of file2']
         raw_corpus_data = []
         filenames = tools.get_filenames_under_path(train_data_path)
         for filename in filenames:
-            with open(filename, 'r', encoding='gbk') as train_file:
+            with open(filename, 'r', encoding=parameters.OPEN_FILE_ENCODING) as train_file:
                 raw_corpus_data.append(train_file.read())
 
         self.tokenizer = Tokenizer()
@@ -52,27 +51,14 @@ class LanguageModel:
                     input_output_pairs.append(input_output_pair)
         print('Total number of input-output pair: {}'.format(len(input_output_pairs)))
 
-        y_shape = len(input_output_pairs), self.vocab_size + 1
-        y_memory_size = tools.get_array_memory_size(y_shape, item_size=8)
-        print('One-hot编码后的输出占用内存大小为：', y_memory_size, 'GB')
-        if y_memory_size > parameters.Y_MEMORY_SIZE_THRESHOLD_GB:
-            print('内存占用超过', parameters.Y_MEMORY_SIZE_THRESHOLD_GB, 'GB')
-            sys.exit(0)
-
-        # pad input sequences
         self.max_length = max([len(input_output_pair) for input_output_pair in input_output_pairs])
-        # lists of list => 2d numpy array
-        input_output_pairs = pad_sequences(input_output_pairs, maxlen=self.max_length, padding='pre')
-        print('Input-output pairs:\n', input_output_pairs)
         print('Max input-output pair length: {}'.format(self.max_length))
 
-        # split into input and output
-        self.X, self.y = input_output_pairs[:, :-1], input_output_pairs[:, -1]
-        # sequence prediction is a problem of multi-class classification
-        # one-hot encode output, word index => one-hot vector
-        self.y = to_categorical(self.y, num_classes=self.vocab_size + 1)
+        self.X, self.y = tools.process_format_to_model_input(input_output_pairs,
+                                                             self.vocab_size,
+                                                             self.max_length)
 
-    def load_model(self):
+    def define_model(self):
         # define model
         model = Sequential()
         # input shape: (batch_size/samples, seq_length/time_step) =>
@@ -80,13 +66,13 @@ class LanguageModel:
         # the output shape of Embedding layer fit LSTM layer
         # TODO 训练词向量（CBOW和skip-gram）
         model.add(Embedding(input_dim=self.vocab_size + 1,
-                            output_dim=network_conf.embedding_output_dim,
+                            output_dim=network_conf.EMBEDDING_OUTPUT_DIM,
                             input_length=self.max_length - 1))
         # TODO 阅读RNN和LSTM原始论文，再看一遍相应博客
-        model.add(LSTM(units=network_conf.lstm_layer_unit))
+        model.add(LSTM(units=network_conf.LSTM_LAYER_UNIT))
         # TODO 继续阅读dropout原始论文
-        model.add(Dropout(rate=network_conf.dropout_layer_rate,
-                          seed=network_conf.dropout_layer_seed))
+        model.add(Dropout(rate=network_conf.DROPOUT_LAYER_RATE,
+                          seed=network_conf.DROPOUT_LAYER_SEED))
         # softmax output layer
         model.add(Dense(self.vocab_size + 1))
         model.add(Activation('softmax'))
@@ -101,12 +87,14 @@ class LanguageModel:
                            optimizer='adam',
                            metrics=['accuracy'])
 
+    # 使用全量训练数据进行训练
     def fit_model(self):
         # train network
         history = self.model.fit(self.X, self.y, epochs=500, verbose=2, batch_size=1)
         print('history:')
         print(history.history)
 
+    # 使用全量测试数据评估模型
     def evaluate_model(self):
         # evaluate model
         # TODO K-fold交叉验证
@@ -116,6 +104,7 @@ class LanguageModel:
         print("%s: %.4f" % (self.model.metrics_names[0], scores[0]))
         print("%s: %.2f%%" % (self.model.metrics_names[1], scores[1] * 100))
 
+    # 适用于装载全量数据的情况下
     def predict(self):
         input_seq_index = np.random.randint(len(self.X))
         input_seq = self.X[input_seq_index]
@@ -130,6 +119,7 @@ class LanguageModel:
                 break
         print('Input output pair:', input_seq, '->', out_word)
 
+    # 均适用
     # generate a sequence from a language model
     def generate_seq(self, seed_text, n_words):
         in_text = seed_text
@@ -154,11 +144,22 @@ class LanguageModel:
     def save_model(self):
         pass
 
-    def fit_model_generator(self):
-
+    def load_model(self):
         pass
 
-    def evaluate_model_generator(self):
+    def generate_batch_samples_from_corpus(self, path):
+        filenames = tools.get_filenames_under_path(path)
+        read_line_count = 0
+        while True:
+            for filename in filenames:
+                with open(filename, 'r', encoding=parameters.OPEN_FILE_ENCODING) as file:
+                    if read_line_count < parameters.BATCH_SAMPLES_NUMBER:
+                        pass
+
+    def fit_model_with_generator(self):
+        pass
+
+    def evaluate_model_with_generator(self):
         pass
 
     def predict_with_generator(self):
