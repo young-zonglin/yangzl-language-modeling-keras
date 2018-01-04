@@ -1,6 +1,10 @@
 import numpy as np
+import tensorflow as tf
 from keras.preprocessing.sequence import pad_sequences
+from keras.utils import multi_gpu_model
+from keras.callbacks import EarlyStopping
 from keras.models import Sequential
+from keras.models import load_model
 from keras.layers import Dense
 from keras.layers import Activation
 from keras.layers import LSTM
@@ -8,6 +12,7 @@ from keras.layers import Embedding
 from keras.layers import Dropout
 import tools
 import network_conf
+import parameters
 
 
 # 使用整个语料库做为训练数据而不只是某个文本 => done
@@ -47,23 +52,28 @@ class LanguageModel:
                                                              self.max_length)
 
     def define_model(self):
-        # define model
-        model = Sequential()
-        # input shape: (batch_size/samples, seq_length/time_step) =>
-        # output shape: (batch_size/samples, time_step, output_dim/features/word vector dim)
-        # the output shape of Embedding layer fit LSTM layer
-        # TODO 训练词向量（CBOW和skip-gram）
-        model.add(Embedding(input_dim=self.vocab_size + 1,
-                            output_dim=network_conf.EMBEDDING_OUTPUT_DIM,
-                            input_length=self.max_length - 1))
-        # TODO 阅读RNN和LSTM原始论文，再看一遍相应博客
-        model.add(LSTM(units=network_conf.LSTM_LAYER_UNIT))
-        # TODO 继续阅读dropout原始论文
-        model.add(Dropout(rate=network_conf.DROPOUT_LAYER_RATE,
-                          seed=network_conf.DROPOUT_LAYER_SEED))
-        # softmax output layer
-        model.add(Dense(self.vocab_size + 1))
-        model.add(Activation('softmax'))
+        # 在cpu上建立模型
+        with tf.device('/cpu:0'):
+            # TODO 模型参数的网格搜索
+            # define model
+            model = Sequential()
+            # input shape: (batch_size/samples, seq_length/time_step) =>
+            # output shape: (batch_size/samples, time_step, output_dim/features/word vector dim)
+            # the output shape of Embedding layer fit LSTM layer
+            # TODO 训练词向量（CBOW和skip-gram）
+            model.add(Embedding(input_dim=self.vocab_size + 1,
+                                output_dim=network_conf.EMBEDDING_OUTPUT_DIM,
+                                input_length=self.max_length - 1))
+            # TODO 阅读RNN和LSTM原始论文，再看一遍相应博客
+            model.add(LSTM(units=network_conf.LSTM_LAYER_UNIT))
+            # TODO 继续阅读dropout原始论文
+            model.add(Dropout(rate=network_conf.DROPOUT_LAYER_RATE,
+                              seed=network_conf.DROPOUT_LAYER_SEED))
+            # softmax output layer
+            model.add(Dense(self.vocab_size + 1))
+            model.add(Activation('softmax'))
+        # 多卡并行训练 => done
+        model = multi_gpu_model(model, gpus=parameters.GPU_NUMBER)
         print('############### Model summary ##################')
         print(model.summary())
         self.model = model
@@ -130,11 +140,11 @@ class LanguageModel:
             in_text += ' ' + out_word
         return in_text.replace(' ', '')
 
-    def save_model(self):
-        pass
+    def save_model(self, file_path):
+        self.model.save(file_path)
 
-    def load_model(self):
-        pass
+    def load_model(self, file_path):
+        self.model = load_model(file_path)
 
     def prepare_for_generator(self, train_data_path):
         self.train_data_path = train_data_path
@@ -149,11 +159,14 @@ class LanguageModel:
 
     # 处理超过内存的数据集
     def fit_model_with_generator(self):
+        early_stopping = EarlyStopping(monitor='val_loss', patience=2)
+        # TODO 训练集、验证集和测试集的比例
         self.model.fit_generator(tools.generate_batch_samples_from_corpus(self.train_data_path,
                                                                           self.tokenizer,
                                                                           self.vocab_size,
                                                                           self.max_length),
-                                 steps_per_epoch=30000, epochs=1000, verbose=1)
+                                 steps_per_epoch=30000, epochs=1000, verbose=1,
+                                 callbacks=early_stopping, shuffle=True)
 
     def evaluate_model_with_generator(self):
         pass
