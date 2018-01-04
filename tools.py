@@ -75,6 +75,7 @@ def process_format_to_model_input(input_output_pairs, vocab_size, max_length):
     # sequence prediction is a problem of multi-class classification
     # one-hot encode output, word index => one-hot vector
     y = to_categorical(y, num_classes=vocab_size + 1)
+    # print((X, y))
     return X, y
 
 
@@ -91,7 +92,8 @@ def generate_text_from_corpus(path):
 
 
 def fit_tokenizer(path):
-    tokenizer = Tokenizer()
+    # 不过滤标点符号，不过滤低频词
+    tokenizer = Tokenizer(filters='')
     tokenizer.fit_on_texts(generate_text_from_corpus(path))
     return tokenizer
 
@@ -99,21 +101,27 @@ def fit_tokenizer(path):
 def generate_input_output_pair_from_corpus(path, tokenizer):
     for text in generate_text_from_corpus(path):
         for line in text.split('\n'):
+            # print(line)
             encoded = tokenizer.texts_to_sequences([line])[0]
+            # print(encoded)
             for i in range(1, len(encoded)):
                 input_output_pair = encoded[: i + 1]
+                # print(input_output_pair)
                 yield input_output_pair
 
 
 def generate_batch_samples_from_corpus(path, tokenizer, vocab_size, max_length):
+    # 在数据集上无限循环
     while True:
         batch_samples_count = 0
         input_output_pairs = list()
         for input_output_pair in generate_input_output_pair_from_corpus(path, tokenizer):
-            if batch_samples_count < parameters.BATCH_SAMPLES_NUMBER:
+            # 每次生成一个批的数据，每次返回固定相同数目的样本
+            if batch_samples_count < parameters.BATCH_SAMPLES_NUMBER - 1:
                 input_output_pairs.append(input_output_pair)
                 batch_samples_count += 1
             else:
+                input_output_pairs.append(input_output_pair)
                 X, y = process_format_to_model_input(input_output_pairs, vocab_size, max_length)
                 yield X, y
                 input_output_pairs = list()

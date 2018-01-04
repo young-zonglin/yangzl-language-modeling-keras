@@ -11,7 +11,7 @@ TRAIN_DATA_PATH = os.path.join(PROJECT_ROOT, 'data')
 OPEN_FILE_ENCODING = 'gbk'
 SAVE_FILE_ENCODING = 'utf-8'
 
-BATCH_SAMPLES_NUMBER = 128
+BATCH_SAMPLES_NUMBER = 32
 
 
 if __name__ == '__main__':
