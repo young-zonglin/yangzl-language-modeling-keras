@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="Encoding">
-    <file url="file://$PROJECT_DIR$/train_data/train_1.txt.gbk.seg.tag" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/small_data" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/small_data/small_data.txt" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/test_data" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/train_data" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/val_data" charset="GBK" />
   </component>
 </project>

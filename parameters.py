@@ -2,6 +2,7 @@ import os
 
 
 FULL_DATA_MODE = False
+TRAIN_N_GRAM = False
 Y_MEMORY_SIZE_THRESHOLD_GB = 2
 
 # 学习os模块 => done

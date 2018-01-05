@@ -160,11 +160,15 @@ class LanguageModel:
         self.tokenizer = tools.fit_tokenizer(self.train_data_path)
         self.vocab_size = len(self.tokenizer.word_index)
         print('Vocabulary size: %d' % self.vocab_size)
-        self.max_length = max([len(input_output_pair) for input_output_pair in
-                               tools.generate_input_output_pair_from_corpus(
-                                   self.train_data_path,
-                                   self.tokenizer)])
-        print('Max input-output pair length: {}'.format(self.max_length))
+        if parameters.TRAIN_N_GRAM:
+            self.max_length = network_conf.N_GRAM
+            print('Train', self.max_length, 'gram model.')
+        else:
+            self.max_length = max([len(input_output_pair) for input_output_pair in
+                                   tools.generate_input_output_pair_from_corpus(
+                                       self.train_data_path,
+                                       self.tokenizer)])
+            print('Max input-output pair length: {}'.format(self.max_length))
 
     # 处理超过内存的数据集
     def fit_model_with_generator(self):

@@ -67,7 +67,8 @@ def process_format_to_model_input(input_output_pairs, vocab_size, max_length):
 
     # pad input sequences
     # lists of list => 2d numpy array
-    input_output_pairs = pad_sequences(input_output_pairs, maxlen=max_length, padding='pre')
+    input_output_pairs = pad_sequences(input_output_pairs, maxlen=max_length,
+                                       padding='pre', truncating='pre')
     # print('Input-output pairs:\n', input_output_pairs)
 
     # split into input and output
