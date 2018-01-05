@@ -27,6 +27,8 @@ class LanguageModel:
         self.vocab_size = network_conf.VOCAB_SIZE
         self.max_length = network_conf.MAX_LENGTH
         self.train_data_path = None
+        self.val_data_path = None
+        self.test_data_path = None
         self.model = None
         self.tokenizer = None
         self.X = None
@@ -88,8 +90,12 @@ class LanguageModel:
 
     # 使用全量训练数据进行训练
     def fit_model(self):
+        early_stopping = EarlyStopping(monitor='acc',
+                                       patience=30, min_delta=0.00001,
+                                       verbose=1, mode='max')
         # train network
-        history = self.model.fit(self.X, self.y, epochs=500, verbose=2, batch_size=1)
+        history = self.model.fit(self.X, self.y, epochs=500, batch_size=1,
+                                 verbose=1, callbacks=[early_stopping], shuffle=True)
         print('history:')
         print(history.history)
 
@@ -140,14 +146,17 @@ class LanguageModel:
             in_text += ' ' + out_word
         return in_text.replace(' ', '')
 
+    # TODO 每轮迭代保存模型
     def save_model(self, file_path):
         self.model.save(file_path)
 
     def load_model(self, file_path):
         self.model = load_model(file_path)
 
-    def prepare_for_generator(self, train_data_path):
+    def prepare_for_generator(self, train_data_path, val_data_path, test_data_path):
         self.train_data_path = train_data_path
+        self.val_data_path = val_data_path
+        self.test_data_path = test_data_path
         self.tokenizer = tools.fit_tokenizer(self.train_data_path)
         self.vocab_size = len(self.tokenizer.word_index)
         print('Vocabulary size: %d' % self.vocab_size)
@@ -159,17 +168,33 @@ class LanguageModel:
 
     # 处理超过内存的数据集
     def fit_model_with_generator(self):
-        early_stopping = EarlyStopping(monitor='val_loss', patience=2)
-        # TODO 训练集、验证集和测试集的比例
-        self.model.fit_generator(tools.generate_batch_samples_from_corpus(self.train_data_path,
-                                                                          self.tokenizer,
-                                                                          self.vocab_size,
-                                                                          self.max_length),
-                                 steps_per_epoch=30000, epochs=1000, verbose=1,
-                                 callbacks=early_stopping, shuffle=True)
+        early_stopping = EarlyStopping(monitor='val_loss', patience=30, min_delta=0.0001,
+                                       verbose=1, mode='min')
+        # 训练集、验证集和测试集的比例为7:2:1 => done
+        history = self.model.fit_generator(tools.generate_batch_samples_from_corpus(self.train_data_path,
+                                                                                    self.tokenizer,
+                                                                                    self.vocab_size,
+                                                                                    self.max_length),
+                                           validation_data=tools.generate_batch_samples_from_corpus(self.val_data_path,
+                                                                                                    self.tokenizer,
+                                                                                                    self.vocab_size,
+                                                                                                    self.max_length),
+                                           validation_steps=100,
+                                           steps_per_epoch=30000, epochs=1000, verbose=1,
+                                           callbacks=[early_stopping])
+        print('history:')
+        print(history.history)
+        # TODO 训练完毕后，将每轮迭代的acc、loss、val_acc、val_loss以画图的形式进行展示
 
     def evaluate_model_with_generator(self):
-        pass
+        scores = self.model.evaluate_generator(generator=tools.generate_batch_samples_from_corpus(self.test_data_path,
+                                                                                                  self.tokenizer,
+                                                                                                  self.vocab_size,
+                                                                                                  self.max_length),
+                                               steps=30000)
+        print("\n==================================\n性能评估：")
+        print("%s: %.4f" % (self.model.metrics_names[0], scores[0]))
+        print("%s: %.2f%%" % (self.model.metrics_names[1], scores[1] * 100))
 
     def predict_with_generator(self):
         pass
