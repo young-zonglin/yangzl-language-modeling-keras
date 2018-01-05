@@ -87,7 +87,7 @@ class LanguageModel:
                               seed=network_conf.DROPOUT_LAYER_SEED))
             model.add(Dense(self.vocab_size + 1))
             model.add(Activation('softmax'))
-        print('############### Model summary ##################')
+        print('\n############### Model summary ##################')
         print(model.summary())
         self.model = model
 
@@ -107,12 +107,12 @@ class LanguageModel:
         # train network
         history = self.model.fit(self.X, self.y, epochs=500, batch_size=1,
                                  verbose=1, callbacks=[early_stopping], shuffle=True)
-        print('========================== history ===========================')
+        print('\n========================== history ===========================')
         acc = history.history.get('acc')
         loss = history.history['loss']
         print('train data acc:', acc)
         print('train data loss', loss)
-        print('======================= acc & loss ============================')
+        print('\n======================= acc & loss ============================')
         for i in range(len(acc)):
             print('epoch {0:<4} | acc: {1:6.3f}% | loss: {2:<10.5f}'.format(i+1, acc[i]*100, loss[i]))
         # 训练完毕后，将每轮迭代的acc、loss、val_acc、val_loss以画图的形式进行展示 => done
