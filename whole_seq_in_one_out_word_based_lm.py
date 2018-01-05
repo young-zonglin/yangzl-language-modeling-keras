@@ -54,28 +54,39 @@ class LanguageModel:
                                                              self.max_length)
 
     def define_model(self):
-        # 在cpu上建立模型
-        with tf.device('/cpu:0'):
-            # TODO 模型参数的网格搜索
-            # define model
+        if parameters.DISTRIBUTED_MULTI_GPU_MODE:
+            # 在cpu上建立模型
+            with tf.device('/cpu:0'):
+                # TODO 模型参数的网格搜索
+                # define model
+                model = Sequential()
+                # input shape: (batch_size/samples, seq_length/time_step) =>
+                # output shape: (batch_size/samples, time_step, output_dim/features/word vector dim)
+                # the output shape of Embedding layer fit LSTM layer
+                # TODO 训练词向量（CBOW和skip-gram）
+                model.add(Embedding(input_dim=self.vocab_size + 1,
+                                    output_dim=network_conf.EMBEDDING_OUTPUT_DIM,
+                                    input_length=self.max_length - 1))
+                # TODO 阅读RNN和LSTM原始论文，再看一遍相应博客
+                model.add(LSTM(units=network_conf.LSTM_LAYER_UNIT))
+                # TODO 继续阅读dropout原始论文
+                model.add(Dropout(rate=network_conf.DROPOUT_LAYER_RATE,
+                                  seed=network_conf.DROPOUT_LAYER_SEED))
+                # softmax output layer
+                model.add(Dense(self.vocab_size + 1))
+                model.add(Activation('softmax'))
+            # 多卡并行训练 => done
+            model = multi_gpu_model(model, gpus=parameters.GPU_NUMBER)
+        else:
             model = Sequential()
-            # input shape: (batch_size/samples, seq_length/time_step) =>
-            # output shape: (batch_size/samples, time_step, output_dim/features/word vector dim)
-            # the output shape of Embedding layer fit LSTM layer
-            # TODO 训练词向量（CBOW和skip-gram）
             model.add(Embedding(input_dim=self.vocab_size + 1,
                                 output_dim=network_conf.EMBEDDING_OUTPUT_DIM,
                                 input_length=self.max_length - 1))
-            # TODO 阅读RNN和LSTM原始论文，再看一遍相应博客
             model.add(LSTM(units=network_conf.LSTM_LAYER_UNIT))
-            # TODO 继续阅读dropout原始论文
             model.add(Dropout(rate=network_conf.DROPOUT_LAYER_RATE,
                               seed=network_conf.DROPOUT_LAYER_SEED))
-            # softmax output layer
             model.add(Dense(self.vocab_size + 1))
             model.add(Activation('softmax'))
-        # 多卡并行训练 => done
-        model = multi_gpu_model(model, gpus=parameters.GPU_NUMBER)
         print('############### Model summary ##################')
         print(model.summary())
         self.model = model
@@ -91,13 +102,24 @@ class LanguageModel:
     # 使用全量训练数据进行训练
     def fit_model(self):
         early_stopping = EarlyStopping(monitor='acc',
-                                       patience=30, min_delta=0.00001,
+                                       patience=5, min_delta=0.0001,
                                        verbose=1, mode='max')
         # train network
         history = self.model.fit(self.X, self.y, epochs=500, batch_size=1,
                                  verbose=1, callbacks=[early_stopping], shuffle=True)
-        print('history:')
-        print(history.history)
+        print('========================== history ===========================')
+        acc = history.history.get('acc')
+        loss = history.history['loss']
+        print('train data acc:', acc)
+        print('train data loss', loss)
+        print('======================= acc & loss ============================')
+        for i in range(len(acc)):
+            print('epoch {0:<4} | acc: {1:6.3f}% | loss: {2:<10.5f}'.format(i+1, acc[i]*100, loss[i]))
+        # 训练完毕后，将每轮迭代的acc、loss、val_acc、val_loss以画图的形式进行展示 => done
+        plt_x = [x+1 for x in range(len(acc))]
+        plt_acc = plt_x, acc
+        plt_loss = plt_x, loss
+        tools.plot_figure('acc & loss', plt_acc, plt_loss)
 
     # 使用全量测试数据评估模型
     def evaluate_model(self):
@@ -105,7 +127,7 @@ class LanguageModel:
         # TODO K-fold交叉验证
         # TODO 学习分类模型评价指标
         scores = self.model.evaluate(self.X, self.y, batch_size=32)
-        print("\n==================================\n性能评估：")
+        print("\n================= 性能评估 ====================")
         print("%s: %.4f" % (self.model.metrics_names[0], scores[0]))
         print("%s: %.2f%%" % (self.model.metrics_names[1], scores[1] * 100))
 
@@ -188,7 +210,6 @@ class LanguageModel:
                                            callbacks=[early_stopping])
         print('history:')
         print(history.history)
-        # TODO 训练完毕后，将每轮迭代的acc、loss、val_acc、val_loss以画图的形式进行展示
 
     def evaluate_model_with_generator(self):
         scores = self.model.evaluate_generator(generator=tools.generate_batch_samples_from_corpus(self.test_data_path,

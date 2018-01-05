@@ -4,6 +4,9 @@ import parameters
 from keras.utils import to_categorical
 from keras.preprocessing.sequence import pad_sequences
 from keras.preprocessing.text import Tokenizer
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import time
 
 
 def get_matrix_memory_size(matrix):
@@ -127,6 +130,21 @@ def generate_batch_samples_from_corpus(path, tokenizer, vocab_size, max_length):
                 yield X, y
                 input_output_pairs = list()
                 batch_samples_count = 0
+
+
+def plot_figure(figure_name, *args):
+    colors = ['r', 'b', 'g', 'y', 'k']
+    styles = ['-', '--', '-.', ':']
+    length = len(args)
+    plt.figure(figure_name)
+    for i in range(length):
+        plt.plot(args[i][0], args[i][1], colors[i]+styles[i], lw=3)
+    if not os.path.exists(parameters.FIGURE_PATH):
+        os.makedirs(parameters.FIGURE_PATH)
+    current_time = time.strftime('%Y-%m-%d %H_%M_%S', time.localtime(time.time()))
+    save_url = os.path.join(parameters.FIGURE_PATH, 'lm_'+current_time+'.png')
+    plt.savefig(save_url)
+    plt.show()  # it is a blocking function
 
 
 # if __name__ == '__main__':

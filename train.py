@@ -10,6 +10,7 @@ def main():
         lm.compile_model()
         lm.fit_model()
         lm.evaluate_model()
+        print(lm.generate_seq('女', 5))
     else:
         lm = LanguageModel()
         lm.prepare_for_generator(train_data_path=parameters.TRAIN_DATA_PATH,

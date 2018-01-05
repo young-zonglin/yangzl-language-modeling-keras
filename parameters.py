@@ -1,7 +1,7 @@
 import os
 
-
-FULL_DATA_MODE = False
+DISTRIBUTED_MULTI_GPU_MODE = False
+FULL_DATA_MODE = True
 TRAIN_N_GRAM = False
 Y_MEMORY_SIZE_THRESHOLD_GB = 2
 
@@ -11,6 +11,7 @@ TRAIN_DATA_PATH = os.path.join(PROJECT_ROOT, 'train_data')
 VAL_DATA_PATH = os.path.join(PROJECT_ROOT, 'val_data')
 TEST_DATA_PATH = os.path.join(PROJECT_ROOT, 'test_data')
 SMALL_DATA_PATH = os.path.join(PROJECT_ROOT, 'small_data')
+FIGURE_PATH = os.path.join(PROJECT_ROOT, 'figure')
 
 OPEN_FILE_ENCODING = 'gbk'
 SAVE_FILE_ENCODING = 'utf-8'
