@@ -135,7 +135,11 @@ def generate_batch_samples_from_corpus(path, tokenizer, vocab_size, max_length):
 def plot_figure(figure_name, *args):
     colors = ['r', 'b', 'g', 'y', 'k']
     styles = ['-', '--', '-.', ':']
+    max_args_num = len(styles)
     length = len(args)
+    if length > max_args_num:
+        print('too much tuple, more than', max_args_num)
+        return
     plt.figure(figure_name)
     for i in range(length):
         plt.plot(args[i][0], args[i][1], colors[i]+styles[i], lw=3)
