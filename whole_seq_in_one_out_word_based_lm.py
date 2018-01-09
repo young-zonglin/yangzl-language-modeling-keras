@@ -115,7 +115,6 @@ class LanguageModel:
         print('\n======================= acc & loss ============================')
         for i in range(len(acc)):
             print('epoch {0:<4} | acc: {1:6.3f}% | loss: {2:<10.5f}'.format(i+1, acc[i]*100, loss[i]))
-        # 训练完毕后，将每轮迭代的acc、loss、val_acc、val_loss以画图的形式进行展示 => done
         plt_x = [x+1 for x in range(len(acc))]
         plt_acc = plt_x, acc
         plt_loss = plt_x, loss
@@ -194,9 +193,10 @@ class LanguageModel:
 
     # 处理超过内存的数据集
     def fit_model_with_generator(self):
-        early_stopping = EarlyStopping(monitor='val_loss', patience=30, min_delta=0.0001,
+        early_stopping = EarlyStopping(monitor='val_loss', patience=5, min_delta=0.0001,
                                        verbose=1, mode='min')
         # 训练集、验证集和测试集的比例为7:2:1 => done
+        # TODO steps应自适应于BATCH_SAMPLES_NUMBER
         history = self.model.fit_generator(tools.generate_batch_samples_from_corpus(self.train_data_path,
                                                                                     self.tokenizer,
                                                                                     self.vocab_size,
@@ -205,18 +205,39 @@ class LanguageModel:
                                                                                                     self.tokenizer,
                                                                                                     self.vocab_size,
                                                                                                     self.max_length),
-                                           validation_steps=100,
-                                           steps_per_epoch=30000, epochs=1000, verbose=1,
+                                           validation_steps=20000,
+                                           steps_per_epoch=80000, epochs=1000, verbose=1,
                                            callbacks=[early_stopping])
-        print('history:')
-        print(history.history)
+        print('\n========================== history ===========================')
+        acc = history.history.get('acc')
+        loss = history.history['loss']
+        val_acc = history.history['val_acc']
+        val_loss = history.history['val_loss']
+        print('train data acc:', acc)
+        print('train data loss', loss)
+        print('val data acc', val_acc)
+        print('val data loss', val_loss)
+        print('\n======================= acc & loss & val_acc & val_loss ============================')
+        for i in range(len(acc)):
+            print('epoch {0:<4} | acc: {1:6.3f}% | loss: {2:<10.5f} |'
+                  ' val_acc: {3:6.3f}% | val_loss: {4:<10.5f}'.format(i + 1,
+                                                                      acc[i] * 100, loss[i],
+                                                                      val_acc[i]*100, val_loss[i]))
+        # 训练完毕后，将每轮迭代的acc、loss、val_acc、val_loss以画图的形式进行展示 => done
+        plt_x = [x + 1 for x in range(len(acc))]
+        plt_acc = plt_x, acc
+        plt_loss = plt_x, loss
+        plt_val_acc = plt_x, val_acc
+        plt_val_loss = plt_x, val_loss
+        tools.plot_figure('acc & loss & val_acc & val_loss',
+                          plt_acc, plt_loss, plt_val_acc, plt_val_loss)
 
     def evaluate_model_with_generator(self):
         scores = self.model.evaluate_generator(generator=tools.generate_batch_samples_from_corpus(self.test_data_path,
                                                                                                   self.tokenizer,
                                                                                                   self.vocab_size,
                                                                                                   self.max_length),
-                                               steps=30000)
+                                               steps=10000)
         print("\n==================================\n性能评估：")
         print("%s: %.4f" % (self.model.metrics_names[0], scores[0]))
         print("%s: %.2f%%" % (self.model.metrics_names[1], scores[1] * 100))
