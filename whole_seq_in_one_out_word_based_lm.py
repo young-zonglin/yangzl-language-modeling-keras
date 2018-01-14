@@ -30,6 +30,7 @@ class LanguageModel:
         self.val_data_path = None
         self.test_data_path = None
         self.model = None
+        self.template_model = None
         self.tokenizer = None
         self.X = None
         self.y = None
@@ -59,24 +60,25 @@ class LanguageModel:
             with tf.device('/cpu:0'):
                 # TODO 模型参数的网格搜索
                 # define model
-                model = Sequential()
+                template_model = Sequential()
                 # input shape: (batch_size/samples, seq_length/time_step) =>
                 # output shape: (batch_size/samples, time_step, output_dim/features/word vector dim)
                 # the output shape of Embedding layer fit LSTM layer
                 # TODO 训练词向量（CBOW和skip-gram）
-                model.add(Embedding(input_dim=self.vocab_size + 1,
-                                    output_dim=network_conf.EMBEDDING_OUTPUT_DIM,
-                                    input_length=self.max_length - 1))
+                template_model.add(Embedding(input_dim=self.vocab_size + 1,
+                                             output_dim=network_conf.EMBEDDING_OUTPUT_DIM,
+                                             input_length=self.max_length - 1))
                 # TODO 阅读RNN和LSTM原始论文，再看一遍相应博客
-                model.add(LSTM(units=network_conf.LSTM_LAYER_UNIT))
+                template_model.add(LSTM(units=network_conf.LSTM_LAYER_UNIT))
                 # TODO 继续阅读dropout原始论文
-                model.add(Dropout(rate=network_conf.DROPOUT_LAYER_RATE,
-                                  seed=network_conf.DROPOUT_LAYER_SEED))
+                template_model.add(Dropout(rate=network_conf.DROPOUT_LAYER_RATE,
+                                           seed=network_conf.DROPOUT_LAYER_SEED))
                 # softmax output layer
-                model.add(Dense(self.vocab_size + 1))
-                model.add(Activation('softmax'))
+                template_model.add(Dense(self.vocab_size + 1))
+                template_model.add(Activation('softmax'))
+                self.template_model = template_model
             # 多卡并行训练 => done
-            model = multi_gpu_model(model, gpus=parameters.GPU_NUMBER)
+            model = multi_gpu_model(template_model, gpus=parameters.GPU_NUMBER)
         else:
             model = Sequential()
             model.add(Embedding(input_dim=self.vocab_size + 1,
@@ -87,6 +89,7 @@ class LanguageModel:
                               seed=network_conf.DROPOUT_LAYER_SEED))
             model.add(Dense(self.vocab_size + 1))
             model.add(Activation('softmax'))
+            self.template_model = model
         print('\n############### Model summary ##################')
         print(model.summary())
         self.model = model
@@ -169,7 +172,7 @@ class LanguageModel:
 
     # TODO 每轮迭代保存模型
     def save_model(self, file_path):
-        self.model.save(file_path)
+        self.template_model.save(file_path)
 
     def load_model(self, file_path):
         self.model = load_model(file_path)
