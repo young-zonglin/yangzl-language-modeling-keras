@@ -1,19 +1,19 @@
 import numpy as np
 import tensorflow as tf
-from keras.preprocessing.sequence import pad_sequences
-from keras.utils import multi_gpu_model
 from keras.callbacks import EarlyStopping
+from keras.layers import Activation
+from keras.layers import Dense
+from keras.layers import Dropout
+from keras.layers import Embedding
+from keras.layers import LSTM
 from keras.models import Sequential
 from keras.models import load_model
-from keras.layers import Dense
-from keras.layers import Activation
-from keras.layers import LSTM
-from keras.layers import Embedding
-from keras.layers import Dropout
-import tools
+from keras.preprocessing.sequence import pad_sequences
+from keras.utils import multi_gpu_model
+
 import network_conf
 import parameters
-
+import tools
 
 # 使用整个语料库做为训练数据而不只是某个文本 => done
 # 使用序列标注的方法减少词汇表的大小 => done

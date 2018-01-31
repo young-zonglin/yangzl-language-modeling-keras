@@ -1,5 +1,5 @@
-from whole_seq_in_one_out_word_based_lm import LanguageModel
 import parameters
+from whole_seq_in_one_out_word_based_lm import LanguageModel
 
 
 def main():

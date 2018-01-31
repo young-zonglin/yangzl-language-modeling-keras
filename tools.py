@@ -1,12 +1,13 @@
-import sys
 import os
-import parameters
-from keras.utils import to_categorical
+import sys
+import time
+
+import matplotlib.pyplot as plt
 from keras.preprocessing.sequence import pad_sequences
 from keras.preprocessing.text import Tokenizer
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import time
+from keras.utils import to_categorical
+
+import parameters
 
 
 def get_matrix_memory_size(matrix):
