@@ -24,16 +24,17 @@ np.random.seed(7)
 
 class LanguageModel:
     def __init__(self):
+        # 词汇表的大小，one hot编码word index，one-hot向量/数组长度为vocab_size+1
         self.vocab_size = network_conf.VOCAB_SIZE
-        self.max_length = network_conf.MAX_LENGTH
+        self.max_length = network_conf.MAX_LENGTH  # 最长序列的长度，序列包含输入和输出
         self.train_data_path = None
         self.val_data_path = None
         self.test_data_path = None
-        self.model = None
-        self.template_model = None
-        self.tokenizer = None
-        self.X = None
-        self.y = None
+        self.model = None  # 配置model的loss和优化器，然后fit和evaluate它
+        self.template_model = None  # 模板model用于保存网络结构和参数
+        self.tokenizer = None  # 通过在corpus上fit，得到dict，用于word=>index
+        self.X = None  # 装载全量数据，得到的输入矩阵
+        self.y = None  # 装载全量数据，得到输出矩阵
 
     # 装载全量数据
     def load_data(self, train_data_path):
@@ -55,37 +56,48 @@ class LanguageModel:
                                                              self.max_length)
 
     def define_model(self):
-        if parameters.DISTRIBUTED_MULTI_GPU_MODE:
-            # 在cpu上建立模型
+        if parameters.DISTRIBUTED_MULTI_GPU_MODE:  # 数据并行，多卡并行训练model
+            # 在cpu上建立模板模型
             with tf.device('/cpu:0'):
-                # TODO 模型参数的网格搜索
-                # define model
+                # TODO 超参的网格搜索
+                # seq_model.add(layer)
                 template_model = Sequential()
-                # input shape: (batch_size/samples, seq_length/time_step) =>
-                # output shape: (batch_size/samples, time_step, output_dim/features/word vector dim)
+                # input shape: (batch_size/samples, seq_length/time_steps/input_length)
+                # output shape: (batch_size/samples, time_steps, output_dim/features/word vector dim)
                 # the output shape of Embedding layer fit LSTM layer
                 # TODO 训练词向量（CBOW和skip-gram）
-                template_model.add(Embedding(input_dim=self.vocab_size + 1,
-                                             output_dim=network_conf.EMBEDDING_OUTPUT_DIM,
+                template_model.add(Embedding(input_dim=self.vocab_size + 1,  # 输入是word index，one hot编码它
+                                             output_dim=network_conf.WORD_EMBEDDING_DIM,  # Embedding层输出词向量
                                              input_length=self.max_length - 1))
                 # TODO 阅读RNN和LSTM原始论文，再看一遍相应博客
-                template_model.add(LSTM(units=network_conf.LSTM_LAYER_UNIT))
+                # LSTM层可以编码任意长度的序列，输出为序列的特征向量
+                # 即序列在特征空间的位置/坐标，从多个维度刻画该序列
+                # 神经网络层输出向量
+                template_model.add(LSTM(units=network_conf.SEQ_FEATURE_VECTOR_DIM))
                 # TODO 继续阅读dropout原始论文
-                template_model.add(Dropout(rate=network_conf.DROPOUT_LAYER_RATE,
-                                           seed=network_conf.DROPOUT_LAYER_SEED))
+                # Dropout层可以阻断工作信号的正向传播过程和误差信号的反向传播过程
+                template_model.add(Dropout(rate=network_conf.DROPOUT_RATE,  # drop一定比率上一层单元的输出
+                                           seed=network_conf.DROPOUT_LAYER_SEED))  # 固定随机数种子，为了结果的可复现
                 # softmax output layer
+                # add全连接层，输入可以自动推断，需要指定输出shape
+                # 输出矩阵的shape为(samples, one-hot vector dim)
+                # 所以，model的输出向量维度应与one-hot vector一样
                 template_model.add(Dense(self.vocab_size + 1))
+                # add激活层，语言模型，序列预测，是一个多分类问题，所以使用softmax激活函数
+                # 使得model的输出具有概率意义，归一化为给定前N-1个词，下一个词的条件概率分布
+                # 即下一个词属于各个词的条件概率
                 template_model.add(Activation('softmax'))
                 self.template_model = template_model
-            # 多卡并行训练 => done
+            # 多卡并行训练模型，数据并行，参数服务器 => done
+            # 关于数据并行，见我的印象笔记“思考：多机分布式并行训练（应用）模型”
             model = multi_gpu_model(template_model, gpus=parameters.GPU_NUMBER)
-        else:
+        else:  # 单卡训练模型，或者在CPU上，基于多线程并行训练模型
             model = Sequential()
             model.add(Embedding(input_dim=self.vocab_size + 1,
-                                output_dim=network_conf.EMBEDDING_OUTPUT_DIM,
+                                output_dim=network_conf.WORD_EMBEDDING_DIM,
                                 input_length=self.max_length - 1))
-            model.add(LSTM(units=network_conf.LSTM_LAYER_UNIT))
-            model.add(Dropout(rate=network_conf.DROPOUT_LAYER_RATE,
+            model.add(LSTM(units=network_conf.SEQ_FEATURE_VECTOR_DIM))
+            model.add(Dropout(rate=network_conf.DROPOUT_RATE,
                               seed=network_conf.DROPOUT_LAYER_SEED))
             model.add(Dense(self.vocab_size + 1))
             model.add(Activation('softmax'))
@@ -100,7 +112,7 @@ class LanguageModel:
         # TODO 学习梯度下降（SGD, Adam, RMSprop等）
         self.model.compile(loss='categorical_crossentropy',
                            optimizer='adam',
-                           metrics=['accuracy'])
+                           metrics=['accuracy'])  # metrics用于训练和测试阶段，这里指定'accuracy'，训练时，每轮迭代都会输出模型的准确率
 
     # 使用全量训练数据进行训练
     def fit_model(self):
