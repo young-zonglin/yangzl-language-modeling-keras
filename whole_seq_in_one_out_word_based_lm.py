@@ -30,7 +30,7 @@ class LanguageModel:
         self.train_data_path = None
         self.val_data_path = None
         self.test_data_path = None
-        self.model = None  # 配置model的loss和优化器，然后fit和evaluate它
+        self.model = None  # 配置model的loss和优化器，然后fit和evaluate它，并用model进行预测
         self.template_model = None  # 模板model用于保存网络结构和参数
         self.tokenizer = None  # 通过在corpus上fit，得到dict，用于word=>index
         self.X = None  # 装载全量数据，得到的输入矩阵
@@ -40,7 +40,7 @@ class LanguageModel:
     def load_data(self, train_data_path):
         self.tokenizer = tools.fit_tokenizer(train_data_path)
         self.vocab_size = len(self.tokenizer.word_index)
-        print('Vocabulary size: %d' % self.vocab_size)
+        print('Vocabulary size: %d' % self.vocab_size)  # 对vocab_size进行格式化输出
 
         input_output_pairs = list()
         for input_output_pair in tools.generate_input_output_pair_from_corpus(train_data_path,
@@ -49,7 +49,7 @@ class LanguageModel:
         print('Total number of input-output pair: {}'.format(len(input_output_pairs)))
 
         self.max_length = max([len(input_output_pair) for input_output_pair in input_output_pairs])
-        print('Max input-output pair length: {}'.format(self.max_length))
+        print('Max input-output pair length: {}'.format(self.max_length))  # 对max_length进行格式化输出
 
         self.X, self.y = tools.process_format_to_model_input(input_output_pairs,
                                                              self.vocab_size,
@@ -116,17 +116,21 @@ class LanguageModel:
 
     # 使用全量训练数据进行训练
     def fit_model(self):
+        # 提前结束训练，避免过拟合，加快训练速度
+        # 如果连续若干轮迭代，模型都未能变得更好，就提前结束训练
+        # 连续patience轮迭代，准确率增加量都没有超过阈值min_delta，或者没有增加，则结束训练
         early_stopping = EarlyStopping(monitor='acc',
                                        patience=5, min_delta=0.0001,
                                        verbose=1, mode='max')
         # train network
+        # 逼近隐藏函数 => loss最小，优化问题 => 梯度下降，近似求解
         history = self.model.fit(self.X, self.y, epochs=500, batch_size=1,
                                  verbose=1, callbacks=[early_stopping], shuffle=True)
         print('\n========================== history ===========================')
-        acc = history.history.get('acc')
-        loss = history.history['loss']
-        print('train data acc:', acc)
-        print('train data loss', loss)
+        acc = history.history.get('acc')  # fit函数返回History对象，它有一个history字典
+        loss = history.history['loss']  # acc和loss都是列表
+        print('train data acc:', acc)   # 训练数据的loss和acc，验证集的val_loss和val_acc，见印象笔记“2018.1.1-2018.1.22”
+        print('train data loss:', loss)
         print('\n======================= acc & loss ============================')
         for i in range(len(acc)):
             print('epoch {0:<4} | acc: {1:6.3f}% | loss: {2:<10.5f}'.format(i+1, acc[i]*100, loss[i]))
@@ -140,6 +144,7 @@ class LanguageModel:
         # evaluate model
         # TODO K-fold交叉验证
         # TODO 学习分类模型评价指标
+        # 训练、验证或者评估模型，均是基于批，一次把一个批的数据送到GPU里（如果直接把全量数据传给GPU，可能显存会OOM）
         scores = self.model.evaluate(self.X, self.y, batch_size=32)
         print("\n================= 性能评估 ====================")
         print("%s: %.4f" % (self.model.metrics_names[0], scores[0]))
@@ -187,6 +192,7 @@ class LanguageModel:
         self.template_model.save(file_path)
 
     def load_model(self, file_path):
+        # model用于预测
         self.model = load_model(file_path)
 
     def prepare_for_generator(self, train_data_path, val_data_path, test_data_path):
