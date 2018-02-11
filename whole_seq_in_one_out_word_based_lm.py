@@ -176,13 +176,15 @@ class LanguageModel:
     def generate_seq(self, seed_text, n_words):
         in_text = seed_text
         # generate a fixed number of words
-        for _ in range(n_words):
+        for _ in range(n_words):  # '_'是占位符，我只是想循环这么多次而已
             # encode the text as integer
             encoded = self.tokenizer.texts_to_sequences([in_text])[0]
             # pre-pad sequences to a fixed length
             encoded = pad_sequences([encoded], maxlen=self.max_length-1, padding='pre')
             # predict probabilities for each word
-            y_index = self.model.predict_classes(encoded, verbose=0)
+            # 输入一个样本，则直接返回它的label
+            # 输入多个样本，则返回class label 1d numpy array
+            y_index = self.model.predict_classes(encoded, verbose=0)  # 预测下一个词的index
             # map predicted word index to word
             out_word = ''
             for word, index in self.tokenizer.word_index.items():
