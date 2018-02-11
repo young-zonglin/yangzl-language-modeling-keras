@@ -210,10 +210,18 @@ class LanguageModel:
         self.tokenizer = tools.fit_tokenizer(self.train_data_path)
         self.vocab_size = len(self.tokenizer.word_index)
         print('Vocabulary size: %d' % self.vocab_size)
+        # 使用LSTM网络构建N-Gram模型，则模型输入为前N-1个词的index，输出为下一个词的index
+        # 训练数据、验证集、测试数据和未见样本，它们的输入部分都相同
+        # 使用全量数据训练模型，这种模式不支持构建N-Gram模型
+        # 基于生成器训练模型，这种模式支持构建N-Gram模型和编码任意长度序列
+        # max_length-1即为时间步，时间步意味着LSTM层要编码多长的序列，要循环编码多少次
+        # 只需控制max_length即可控制网络结构和输入矩阵的shape
+        # max_length取3即构建三元语法，给定前两个词，预测下一个词
         if parameters.TRAIN_N_GRAM:
             self.max_length = network_conf.N_GRAM
             print('Train', self.max_length, 'gram model.')
         else:
+            # 最长序列的长度，input-output pair是一个列表，更多见印象笔记“关于input-output pair，2018-2-11 17:26”
             self.max_length = max([len(input_output_pair) for input_output_pair in
                                    tools.generate_input_output_pair_from_corpus(
                                        self.train_data_path,
