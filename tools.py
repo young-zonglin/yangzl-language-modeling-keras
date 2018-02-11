@@ -59,6 +59,18 @@ def get_filenames_under_path(path):
     return filenames
 
 
+def fit_tokenizer(path):
+    """
+    使用语料fit tokenizer
+    :param path: corpus path
+    :return: tokenizer fitted by corpus
+    """
+    # 不过滤标点符号，不过滤低频词
+    tokenizer = Tokenizer(filters='')
+    tokenizer.fit_on_texts(generate_text_from_corpus(path))
+    return tokenizer
+
+
 def process_format_to_model_input(input_output_pairs, vocab_size, max_length):
     """
     处理输入输出对的格式，使得符合模型的输入要求
@@ -99,18 +111,6 @@ def generate_text_from_corpus(path):
     for filename in filenames:
         with open(filename, 'r', encoding=parameters.OPEN_FILE_ENCODING) as file:
             yield file.read()
-
-
-def fit_tokenizer(path):
-    """
-    使用语料fit tokenizer
-    :param path: corpus path
-    :return: tokenizer fitted by corpus
-    """
-    # 不过滤标点符号，不过滤低频词
-    tokenizer = Tokenizer(filters='')
-    tokenizer.fit_on_texts(generate_text_from_corpus(path))
-    return tokenizer
 
 
 def generate_input_output_pair_from_corpus(path, tokenizer):
