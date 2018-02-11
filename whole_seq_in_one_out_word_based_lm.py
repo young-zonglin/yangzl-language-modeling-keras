@@ -151,14 +151,20 @@ class LanguageModel:
         print("%s: %.2f%%" % (self.model.metrics_names[1], scores[1] * 100))
 
     # 适用于装载全量数据的情况下
+    # model fit和evaluate完毕，应用它
     def predict(self):
-        input_seq_index = np.random.randint(len(self.X))
+        # numpy的随机数详见ScikitLearnStudy项目的NumPyRandomStudy.py
+        input_seq_index = np.random.randint(len(self.X))  # 从[0, total input-output pair number)中产生一个随机整数
         input_seq = self.X[input_seq_index]
+        # 输入一个样本（1d numpy数组），则返回一个预测向量（1d numpy数组）
+        # 输入多个样本，则返回预测矩阵，均为2d numpy数组
         prediction = self.model.predict(input_seq, verbose=2)
         print('Model out vector:\n', prediction)
-        y_index = np.argmax(prediction)
+        # 沿着指定轴，返回最大值的索引
+        y_index = np.argmax(prediction)  # 得到下一个词的index，进一步index => word，得到下一个词
         print('Predict word index:', y_index)
         out_word = ''
+        # for k, v in dict.items()
         for word, index in self.tokenizer.word_index.items():
             if index == y_index:
                 out_word = word
