@@ -229,6 +229,8 @@ class LanguageModel:
             print('Max input-output pair length: {}'.format(self.max_length))
 
     # 处理超过内存的数据集
+    # 模型的训练使用的是min-batch梯度下降，本来就是batch by batch
+    # 通过一个生成器，内存里只需维持一个批的数据，内存友好
     def fit_model_with_generator(self):
         early_stopping = EarlyStopping(monitor='val_loss', patience=5, min_delta=0.0001,
                                        verbose=1, mode='min')
@@ -269,6 +271,8 @@ class LanguageModel:
         tools.plot_figure('acc & loss & val_acc & val_loss',
                           plt_acc, plt_loss, plt_val_acc, plt_val_loss)
 
+    # 通过生成器来生成测试数据，本来测试数据也是batch by batch地被处理
+    # 一次传一个批的测试数据给GPU，每个批可以计算一下指标，求平均则可以得到模型在这个测试集上的性能表现
     def evaluate_model_with_generator(self):
         scores = self.model.evaluate_generator(generator=tools.generate_batch_samples_from_corpus(self.test_data_path,
                                                                                                   self.tokenizer,
@@ -280,4 +284,4 @@ class LanguageModel:
         print("%s: %.2f%%" % (self.model.metrics_names[1], scores[1] * 100))
 
     def predict_with_generator(self):
-        pass
+        pass  # 占位符，可以先不实现这个方法
