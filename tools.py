@@ -16,8 +16,8 @@ def get_matrix_memory_size(matrix):
     :param matrix: 2d numpy array
     :return: object_size(in GB), values_size(in GB), item_size(in byte)
     """
-    object_size = bytes_to_gb(sys.getsizeof(matrix))
-    values_size = bytes_to_gb(matrix.nbytes)
+    object_size = byte_to_gb(sys.getsizeof(matrix))
+    values_size = byte_to_gb(matrix.nbytes)
     item_size = matrix.itemsize
     return object_size, values_size, item_size
 
@@ -32,11 +32,16 @@ def get_array_memory_size(array_shape, item_size):
     element_number = 1
     for tmp in array_shape:
         element_number *= tmp
-    return bytes_to_gb(element_number * item_size)
+    return byte_to_gb(element_number * item_size)
 
 
-def bytes_to_gb(bytes_number):
-    return bytes_number / (1024**3)
+def byte_to_gb(byte_number):
+    """
+    convert byte to GB
+    :param byte_number: byte number
+    :return: GB
+    """
+    return byte_number / (1024 ** 3)
 
 
 def get_filenames_under_path(path):
@@ -86,9 +91,9 @@ def process_format_to_model_input(input_output_pairs, vocab_size, max_length):
 
 def generate_text_from_corpus(path):
     """
-    生成器函数，返回一个迭代器
-    :param path:
-    :return: 迭代器，可以遍历path下所有文件的内容
+    生成器函数，一次返回一个文本的全部内容
+    :param path: corpus path
+    :return: 返回迭代器，可以遍历path下所有文件的内容
     """
     filenames = get_filenames_under_path(path)
     for filename in filenames:
@@ -97,6 +102,11 @@ def generate_text_from_corpus(path):
 
 
 def fit_tokenizer(path):
+    """
+    使用语料fit tokenizer
+    :param path: corpus path
+    :return: tokenizer fitted by corpus
+    """
     # 不过滤标点符号，不过滤低频词
     tokenizer = Tokenizer(filters='')
     tokenizer.fit_on_texts(generate_text_from_corpus(path))
@@ -104,6 +114,12 @@ def fit_tokenizer(path):
 
 
 def generate_input_output_pair_from_corpus(path, tokenizer):
+    """
+    生成器函数，一次生成一个输入输出对
+    :param path: corpus path
+    :param tokenizer:
+    :return: 返回一个迭代器，可以遍历由corpus生成的input-output pair的集合
+    """
     for text in generate_text_from_corpus(path):
         for line in text.split('\n'):
             # print(line)
@@ -116,7 +132,15 @@ def generate_input_output_pair_from_corpus(path, tokenizer):
 
 
 def generate_batch_samples_from_corpus(path, tokenizer, vocab_size, max_length):
-    # 在数据集上无限循环
+    """
+    生成器函数，一次生成一个批的数据
+    会在数据集上无限循环
+    :param path: corpus path
+    :param tokenizer:
+    :param vocab_size:
+    :param max_length:
+    :return: 返回迭代器，可以遍历由corpus生成的batch data的集合。batch data即一个批的输入矩阵和输出矩阵(X, y)
+    """
     while True:
         batch_samples_count = 0
         input_output_pairs = list()
@@ -134,6 +158,13 @@ def generate_batch_samples_from_corpus(path, tokenizer, vocab_size, max_length):
 
 
 def plot_figure(figure_name, *args):
+    """
+    画图，目前最多画四条曲线，传入一个(x, y)元组，就画一条曲线
+    这是一个阻塞函数
+    :param figure_name: 图片的名字
+    :param args: 变长参数，即参数数目可变
+    :return: None
+    """
     colors = ['r', 'b', 'g', 'y', 'k']
     styles = ['-', '--', '-.', ':']
     max_args_num = len(styles)
