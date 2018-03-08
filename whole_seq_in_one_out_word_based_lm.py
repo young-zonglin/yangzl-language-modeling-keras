@@ -222,11 +222,26 @@ class LanguageModel:
             print('Train', self.max_length, 'gram model.')
         else:
             # 最长序列的长度，input-output pair是一个列表，更多见印象笔记“关于input-output pair，2018-2-11 17:26”
-            self.max_length = max([len(input_output_pair) for input_output_pair in
-                                   tools.generate_input_output_pair_from_corpus(
-                                       self.train_data_path,
-                                       self.tokenizer)])
+            content_len = [(input_output_pair, len(input_output_pair)) for input_output_pair in
+                           tools.generate_input_output_pair_from_corpus(
+                               self.train_data_path,
+                               self.tokenizer)]
+            max_length = -1
+            max_index = -1
+            for i in range(len(content_len)):
+                length = content_len[i][1]
+                if length > max_length:
+                    max_length = length
+                    max_index = i
+            self.max_length = max_length
             print('Max input-output pair length: {}'.format(self.max_length))
+            print('Max input-output pair:\n{}'.format(content_len[max_index][0]))
+            print('Raw content of max input-output pair:')
+            for word_index in content_len[max_index][0]:
+                for word, index in self.tokenizer.word_index.items():
+                    if index == word_index:
+                        print(word, end=' ')
+                        break
 
     # 处理超过内存的数据集
     # 模型的训练使用的是min-batch梯度下降，本来就是batch by batch
