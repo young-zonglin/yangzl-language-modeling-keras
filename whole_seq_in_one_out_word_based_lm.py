@@ -102,7 +102,9 @@ class LanguageModel:
             model.add(Dense(self.vocab_size + 1))
             model.add(Activation('softmax'))
             self.template_model = model
-        print('\n############### Model summary ##################')
+        print('\n############### Template Model Summary ##################')
+        print(self.template_model.summary())
+        print('\n############### Model Summary ##################')
         print(model.summary())
         self.model = model
 
@@ -211,9 +213,9 @@ class LanguageModel:
         self.vocab_size = len(self.tokenizer.word_index)
         print('Vocabulary size: %d' % self.vocab_size)
         # 使用LSTM网络构建N-Gram模型，则模型输入为前N-1个词的index，输出为下一个词的index
-        # 训练数据、验证集、测试数据和未见样本，它们的输入部分都相同
-        # 使用全量数据训练模型，这种模式不支持构建N-Gram模型
-        # 基于生成器训练模型，这种模式支持构建N-Gram模型和编码任意长度序列
+        # 训练数据、验证集、测试数据和未见样本，它们的输入部分都相同，都是前N-1个词的index
+        # 使用全量数据训练模型（即一次性将全部数据加载到内存里），这种模式不支持构建N-Gram模型
+        # 基于生成器训练模型，这种模式支持构建N-Gram模型和编码任意长度序列，事实上，它俩都是N-Gram模型
         # max_length-1即为时间步，时间步意味着LSTM层要编码多长的序列，要循环编码多少次
         # 只需控制max_length即可控制网络结构和输入矩阵的shape
         # max_length取3即构建三元语法，给定前两个词，预测下一个词
@@ -250,7 +252,8 @@ class LanguageModel:
         early_stopping = EarlyStopping(monitor='val_loss', patience=5, min_delta=0.0001,
                                        verbose=1, mode='min')
         # 训练集、验证集和测试集的比例为7:2:1 => done
-        # TODO steps应自适应于BATCH_SAMPLES_NUMBER
+        # steps应自适应于BATCH_SAMPLES_NUMBER => done
+        batch_samples_number = parameters.BATCH_SAMPLES_NUMBER
         history = self.model.fit_generator(tools.generate_batch_samples_from_corpus(self.train_data_path,
                                                                                     self.tokenizer,
                                                                                     self.vocab_size,
@@ -259,8 +262,9 @@ class LanguageModel:
                                                                                                     self.tokenizer,
                                                                                                     self.vocab_size,
                                                                                                     self.max_length),
-                                           validation_steps=20000,
-                                           steps_per_epoch=80000, epochs=1000, verbose=1,
+                                           validation_steps=parameters.VAL_SAMPLES / batch_samples_number,
+                                           steps_per_epoch=parameters.TRAIN_EPOCH_SAMPLES / batch_samples_number,
+                                           epochs=1000, verbose=1,
                                            callbacks=[early_stopping])
         print('\n========================== history ===========================')
         acc = history.history.get('acc')
