@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+from keras.backend.tensorflow_backend import set_session
 from keras.callbacks import EarlyStopping
 from keras.layers import Activation
 from keras.layers import Dense
@@ -14,6 +15,15 @@ from keras.utils import multi_gpu_model
 import network_conf
 import parameters
 import tools
+
+# TensorFlow显存管理
+# 相关链接：http://www.friskit.me/2017/02/01/keras-tensorflow-vram-video-memory-configproto/
+# http://blog.csdn.net/cq361106306/article/details/52950081
+# http://blog.csdn.net/leibaojiangjun1/article/details/53671257
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.9  # 最多只能占用xx%的总显存
+config.gpu_options.allow_growth = True  # 按需申请显存
+set_session(tf.Session(config=config))  # 主动创建一个使用指定配置的Session，替换自动创建的参数均为默认值的Session
 
 # 使用整个语料库做为训练数据而不只是某个文本 => done
 # 使用序列标注的方法减少词汇表的大小 => done
