@@ -228,6 +228,7 @@ class LanguageModel:
                            tools.generate_input_output_pair_from_corpus(
                                self.train_data_path,
                                self.tokenizer)]
+            print('Total number of input-output pair: {}'.format(len(content_len)))
             max_length = -1
             max_index = -1
             for i in range(len(content_len)):
