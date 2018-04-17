@@ -1,5 +1,5 @@
 import parameters
-from word_based_lm import LanguageModel
+from language_model import LanguageModel
 
 
 def main():
