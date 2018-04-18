@@ -35,8 +35,8 @@ np.random.seed(7)
 class LanguageModel:
     def __init__(self):
         # 词汇表的大小，one hot编码word index，one-hot向量/数组长度为vocab_size+1
-        self.vocab_size = network_conf.VOCAB_SIZE
-        self.max_length = network_conf.MAX_LENGTH  # 最长序列的长度，序列包含输入和输出
+        self.vocab_size = None
+        self.max_length = None  # 最长序列的长度，序列包含输入和输出
         self.train_data_path = None
         self.val_data_path = None
         self.test_data_path = None
@@ -45,6 +45,10 @@ class LanguageModel:
         self.tokenizer = None  # 通过在corpus上fit，得到dict，用于word=>index
         self.X = None  # 装载全量数据，得到的输入矩阵
         self.y = None  # 装载全量数据，得到输出矩阵
+        # 训练集/验证集/测试集的样本数
+        self.train_samples_num = 0
+        self.val_samples_num = 0
+        self.test_samples_num = 0
 
     # 装载全量数据
     def load_data(self, train_data_path):
@@ -222,6 +226,16 @@ class LanguageModel:
         self.tokenizer = tools.fit_tokenizer(self.train_data_path)
         self.vocab_size = len(self.tokenizer.word_index)
         print('Vocabulary size: %d' % self.vocab_size)
+        for _ in tools.generate_input_output_pair_from_corpus(self.train_data_path, self.tokenizer):
+            self.train_samples_num += 1
+        for _ in tools.generate_input_output_pair_from_corpus(self.val_data_path, self.tokenizer):
+            self.val_samples_num += 1
+        for _ in tools.generate_input_output_pair_from_corpus(self.test_data_path, self.tokenizer):
+            self.test_samples_num += 1
+        print('Train data samples num: %d' % self.train_samples_num)
+        print('Val data samples num: %d' % self.val_samples_num)
+        print('Test data samples num: %d' % self.test_samples_num)
+
         # 使用LSTM网络构建N-Gram模型，则模型输入为前N-1个词的index，输出为下一个词的index
         # 训练数据、验证集、测试数据和未见样本，它们的输入部分都相同，都是前N-1个词的index
         # 使用全量数据训练模型（即一次性将全部数据加载到内存里），这种模式不支持构建N-Gram模型
@@ -273,8 +287,8 @@ class LanguageModel:
                                                                                                     self.tokenizer,
                                                                                                     self.vocab_size,
                                                                                                     self.max_length),
-                                           validation_steps=parameters.VAL_SAMPLES / batch_samples_number,
-                                           steps_per_epoch=parameters.TRAIN_EPOCH_SAMPLES / batch_samples_number,
+                                           validation_steps=self.val_samples_num / batch_samples_number,
+                                           steps_per_epoch=self.train_samples_num / batch_samples_number,
                                            epochs=1000, verbose=1,
                                            callbacks=[early_stopping])
         print('\n========================== history ===========================')
@@ -304,11 +318,12 @@ class LanguageModel:
     # 通过生成器来生成测试数据，本来测试数据也是batch by batch地被处理
     # 一次传一个批的测试数据给GPU，每个批可以计算一下指标，求平均则可以得到模型在这个测试集上的性能表现
     def evaluate_model_with_generator(self):
+        batch_samples_number = parameters.BATCH_SAMPLES_NUMBER
         scores = self.model.evaluate_generator(generator=tools.generate_batch_samples_from_corpus(self.test_data_path,
                                                                                                   self.tokenizer,
                                                                                                   self.vocab_size,
                                                                                                   self.max_length),
-                                               steps=10000)
+                                               steps=self.test_samples_num/batch_samples_number)
         print("\n==================================\n性能评估：")
         print("%s: %.4f" % (self.model.metrics_names[0], scores[0]))
         print("%s: %.2f%%" % (self.model.metrics_names[1], scores[1] * 100))

@@ -7,20 +7,29 @@ Y_MEMORY_SIZE_THRESHOLD_GB = 2
 
 # 学习os模块 => done
 PROJECT_ROOT = os.path.dirname(os.path.realpath(__file__))
-TRAIN_DATA_PATH = os.path.join(PROJECT_ROOT, 'train_data')
-VAL_DATA_PATH = os.path.join(PROJECT_ROOT, 'val_data')
-TEST_DATA_PATH = os.path.join(PROJECT_ROOT, 'test_data')
 SMALL_DATA_PATH = os.path.join(PROJECT_ROOT, 'small_data')
 FIGURE_PATH = os.path.join(PROJECT_ROOT, 'figure')
 
-OPEN_FILE_ENCODING = 'gbk'
+GPU_NUMBER = 2
+
+# TRAIN_DATA_PATH = os.path.join(PROJECT_ROOT, 'train_data')
+# VAL_DATA_PATH = os.path.join(PROJECT_ROOT, 'val_data')
+# TEST_DATA_PATH = os.path.join(PROJECT_ROOT, 'test_data')
+#
+# OPEN_FILE_ENCODING = 'gbk'
+# SAVE_FILE_ENCODING = 'utf-8'
+#
+# BATCH_SAMPLES_NUMBER = 256  # 64 128 256
+
+# 使用人民日报标注语料训练基于字的LM
+TRAIN_DATA_PATH = os.path.join(PROJECT_ROOT, 'train-people-daily')
+VAL_DATA_PATH = os.path.join(PROJECT_ROOT, 'val-people-daily')
+TEST_DATA_PATH = os.path.join(PROJECT_ROOT, 'test-people-daily')
+
+OPEN_FILE_ENCODING = 'utf-8'
 SAVE_FILE_ENCODING = 'utf-8'
 
-GPU_NUMBER = 2
 BATCH_SAMPLES_NUMBER = 256  # 64 128 256
-TRAIN_EPOCH_SAMPLES = 80000 * 64
-VAL_SAMPLES = 20000 * 64
-
 
 if __name__ == '__main__':
     print(PROJECT_ROOT)

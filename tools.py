@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import re
 
 import matplotlib.pyplot as plt
 from keras.preprocessing.sequence import pad_sequences
@@ -8,6 +9,8 @@ from keras.preprocessing.text import Tokenizer
 from keras.utils import to_categorical
 
 import parameters
+
+match_newline_pattern = re.compile('\n+')
 
 
 def get_matrix_memory_size(matrix):
@@ -121,8 +124,10 @@ def generate_input_output_pair_from_corpus(path, tokenizer):
     :return: 返回一个迭代器，可以遍历由corpus生成的input-output pair的集合
     """
     for text in generate_text_from_corpus(path):
-        for line in text.split('\n'):
+        for line in match_newline_pattern.split(text):
             # print(line)
+            if line == '':
+                continue
             encoded = tokenizer.texts_to_sequences([line])[0]
             # print(encoded)
             for i in range(1, len(encoded)):
