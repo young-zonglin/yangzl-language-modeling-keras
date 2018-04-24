@@ -98,8 +98,7 @@ class LanguageModel:
                 # 所以，model的输出向量维度应与one-hot vector一样
                 template_model.add(Dense(self.vocab_size + 1))
                 # add激活层，语言模型，序列预测，是一个多分类问题，所以使用softmax激活函数
-                # 使得model的输出具有概率意义，归一化为给定前N-1个词，下一个词的条件概率分布
-                # 即下一个词属于各个词的条件概率
+                # 使得model的输出具有概率意义，归一化为给定前N-1个词，下一个词属于各个词的条件概率分布
                 template_model.add(Activation('softmax'))
                 self.template_model = template_model
             # 多卡并行训练模型，数据并行，参数服务器 => done
