@@ -79,11 +79,12 @@ class LanguageModel:
                 # input shape: (batch_size/samples, seq_length/time_steps/input_length)
                 # output shape: (batch_size/samples, time_steps, output_dim/features/word vector dim)
                 # the output shape of Embedding layer fit LSTM layer
-                # TODO 训练词向量（CBOW和skip-gram）
+                # TODO 使用预训练的词向量（CBOW和skip-gram等）
+                # Embedding层其实就是嵌入矩阵，各个时间步共享该矩阵
                 template_model.add(Embedding(input_dim=self.vocab_size + 1,  # 输入是word index，one hot编码它
                                              output_dim=network_conf.WORD_EMBEDDING_DIM,  # Embedding层输出词向量
                                              input_length=self.max_length - 1))
-                # TODO 阅读RNN和LSTM原始论文，再看一遍相应博客
+                # 阅读RNN和LSTM原始论文，再看一遍相应博客 => done，感觉现在对RNN和LSTM还是比较熟悉
                 # LSTM层可以编码任意长度的序列，输出为序列的特征向量
                 # 即序列在特征空间的位置/坐标，从多个维度刻画该序列
                 # 神经网络层输出向量
@@ -123,7 +124,7 @@ class LanguageModel:
 
     def compile_model(self):
         # config process of optimization
-        # TODO 学习损失函数
+        # 学习损失函数 => done，这里是softmax cross-entropy loss function（真实分布和预期分布的交叉熵）
         # TODO 学习梯度下降（SGD, Adam, RMSprop等）
         self.model.compile(loss='categorical_crossentropy',
                            optimizer='adam',
@@ -158,7 +159,7 @@ class LanguageModel:
     def evaluate_model(self):
         # evaluate model
         # TODO K-fold交叉验证
-        # TODO 学习分类模型评价指标
+        # 学习分类模型的评价指标 => done => precision, recall and F1-score
         # 训练、验证或者评估模型，均是基于批，一次把一个批的数据送到GPU里（如果直接把全量数据传给GPU，可能显存会OOM）
         scores = self.model.evaluate(self.X, self.y, batch_size=32)
         print("\n================= 性能评估 ====================")
