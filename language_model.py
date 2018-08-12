@@ -90,7 +90,7 @@ class LanguageModel:
                 # 即序列在特征空间的位置/坐标，从多个维度刻画该序列
                 # 神经网络层输出向量
                 template_model.add(LSTM(units=network_conf.SEQ_FEATURE_VECTOR_DIM))
-                # TODO 继续阅读dropout原始论文
+                # 继续阅读dropout原始论文 => 差不多理解到位了
                 # Dropout层可以阻断工作信号的正向传播过程和误差信号的反向传播过程
                 template_model.add(Dropout(rate=network_conf.DROPOUT_RATE,  # drop一定比率上一层单元的输出
                                            seed=network_conf.DROPOUT_LAYER_SEED))  # 固定随机数种子，为了结果的可复现
@@ -141,9 +141,9 @@ class LanguageModel:
         # 提前结束训练，避免过拟合，加快训练速度
         # 如果连续若干轮迭代，模型都未能变得更好，就提前结束训练
         # 连续patience轮迭代，准确率增加量都没有超过阈值min_delta，或者没有增加，则结束训练
-        early_stopping = EarlyStopping(monitor='acc',
+        early_stopping = EarlyStopping(monitor='val_loss',
                                        patience=5, min_delta=0.0001,
-                                       verbose=1, mode='max')
+                                       verbose=1, mode='min')
         # train network
         # 逼近隐藏函数 => loss最小，优化问题 => 梯度下降，近似求解
         history = self.model.fit(self.X, self.y, epochs=500, batch_size=1,
@@ -164,7 +164,7 @@ class LanguageModel:
     # 使用全量测试数据评估模型
     def evaluate_model(self):
         # evaluate model
-        # TODO K-fold交叉验证
+        # K-fold交叉验证 => done => 深度学习基于验证集调超参，K-fold交叉验证代价太大
         # 学习分类模型的评价指标 => done => precision, recall and F1-score
         # 训练、验证或者评估模型，均是基于批，一次把一个批的数据送到GPU里（如果直接把全量数据传给GPU，可能显存会OOM）
         scores = self.model.evaluate(self.X, self.y, batch_size=32)

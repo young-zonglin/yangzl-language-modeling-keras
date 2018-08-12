@@ -1,7 +1,7 @@
 import os
 
 DISTRIBUTED_MULTI_GPU_MODE = False
-FULL_DATA_MODE = False
+FULL_DATA_MODE = True
 TRAIN_N_GRAM = True
 Y_MEMORY_SIZE_THRESHOLD_GB = 2
 
@@ -16,8 +16,8 @@ GPU_NUMBER = 2
 # VAL_DATA_PATH = os.path.join(PROJECT_ROOT, 'val_data')
 # TEST_DATA_PATH = os.path.join(PROJECT_ROOT, 'test_data')
 #
-# OPEN_FILE_ENCODING = 'gbk'
-# SAVE_FILE_ENCODING = 'utf-8'
+OPEN_FILE_ENCODING = 'gbk'
+SAVE_FILE_ENCODING = 'utf-8'
 #
 # BATCH_SAMPLES_NUMBER = 256  # 64 128 256
 
@@ -26,8 +26,8 @@ TRAIN_DATA_PATH = os.path.join(PROJECT_ROOT, 'train-people-daily')
 VAL_DATA_PATH = os.path.join(PROJECT_ROOT, 'val-people-daily')
 TEST_DATA_PATH = os.path.join(PROJECT_ROOT, 'test-people-daily')
 
-OPEN_FILE_ENCODING = 'utf-8'
-SAVE_FILE_ENCODING = 'utf-8'
+# OPEN_FILE_ENCODING = 'utf-8'
+# SAVE_FILE_ENCODING = 'utf-8'
 
 BATCH_SAMPLES_NUMBER = 256  # 64 128 256
 
