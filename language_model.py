@@ -94,8 +94,6 @@ class LanguageModel:
                 # Dropout层可以阻断工作信号的正向传播过程和误差信号的反向传播过程
                 template_model.add(Dropout(rate=network_conf.DROPOUT_RATE,  # drop一定比率上一层单元的输出
                                            seed=network_conf.DROPOUT_LAYER_SEED))  # 固定随机数种子，为了结果的可复现
-                template_model.add(Dense(256, activation='relu'))
-                template_model.add(Dropout(network_conf.DROPOUT_RATE))
                 # softmax output layer
                 # add全连接层，输入可以自动推断，需要指定输出shape
                 # 输出矩阵的shape为(samples, one-hot vector dim)
@@ -117,8 +115,6 @@ class LanguageModel:
             model.add(LSTM(units=network_conf.SEQ_FEATURE_VECTOR_DIM))
             model.add(Dropout(rate=network_conf.DROPOUT_RATE,
                               seed=network_conf.DROPOUT_LAYER_SEED))
-            model.add(Dense(256, activation='relu'))
-            model.add(Dropout(network_conf.DROPOUT_RATE))
             model.add(Dense(self.vocab_size + 1))
             model.add(Activation('softmax'))
             self.template_model = model
