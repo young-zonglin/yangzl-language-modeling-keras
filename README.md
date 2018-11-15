@@ -2,7 +2,7 @@
 
 **Warning**: The implementation of the generator is not efficient enough, the GPU will be idle periodically!
 
-**recommendation**: Use pytorch's [fairseq](https://github.com/pytorch/fairseq) nlp library or TensorFlow's [tensor2tensor](https://github.com/tensorflow/tensor2tensor) library.
+**Recommendation**: Use PyTorch's [fairseq](https://github.com/pytorch/fairseq) nlp library or TensorFlow's [tensor2tensor](https://github.com/tensorflow/tensor2tensor) library.
 
 ## Keras language modeling
 My first language model implemented by Keras with LSTM in Python.
